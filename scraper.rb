@@ -50,9 +50,8 @@ class MemberRow < Scraped::HTML
     tds[1].text.tidy
   end
 
-  # TODO: convert this to a date
   field :start_date do
-    tds[6].text
+    tds[6].text.split('.').reverse.map { |str| '%02d' % str.to_i }.join('-')
   end
 
   private
