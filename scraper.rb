@@ -47,7 +47,7 @@ class MembersPage < Scraped::HTML
   end
 end
 
-class CurrentMemberRow < Scraped::HTML
+class MemberRow < Scraped::HTML
   field :name do
     name_link.map(&:text).map(&:tidy).first
   end
@@ -60,11 +60,11 @@ class CurrentMemberRow < Scraped::HTML
     tds[1].text.tidy
   end
 
-  field :start_date do
-    tds[6].text.split('.').reverse.map { |str| '%02d' % str.to_i }.join('-')
-  end
-
   private
+
+  def relevant_date
+    tds.last.text.split('.').reverse.map { |str| '%02d' % str.to_i }.join('-')
+  end
 
   def tds
     noko.css('td')
@@ -75,31 +75,15 @@ class CurrentMemberRow < Scraped::HTML
   end
 end
 
-class ExMemberRow < Scraped::HTML
-  field :name do
-    name_link.map(&:text).map(&:tidy).first
+class CurrentMemberRow < MemberRow
+  field :start_date do
+    relevant_date
   end
+end
 
-  field :id do
-    name_link.first&.attr('wikidata')
-  end
-
-  field :party do
-    tds[1].text.tidy
-  end
-
+class ExMemberRow < MemberRow
   field :end_date do
-    tds[5].text.split('.').reverse.map { |str| '%02d' % str.to_i }.join('-')
-  end
-
-  private
-
-  def tds
-    noko.css('td')
-  end
-
-  def name_link
-    tds[2].css('a')
+    relevant_date
   end
 end
 
