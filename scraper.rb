@@ -13,12 +13,10 @@ class MembersPage < Scraped::HTML
   decorator WikidataIdsDecorator::Links
 
   field :members do
-    member_table.xpath('.//tr[td]').map do |tr|
-      data = fragment(tr => MemberRow).to_h
-      # Awkward because Радикальна партія is different in each table
-      known = parties.select { |party| party[:name].include? data[:party] }
-      data[:party_id] = known.first[:id] if known.size == 1
-      data
+    current_members.map do |mem|
+      known = parties.select { |party| party[:name].include? mem[:party] }
+      mem[:party_id] = known.first[:id] if known.size == 1
+      mem
     end
   end
 
@@ -28,7 +26,11 @@ class MembersPage < Scraped::HTML
 
   private
 
-  def member_table
+  def current_members
+    current_members_table.xpath('.//tr[td]').map { |tr| fragment(tr => CurrentMemberRow).to_h }
+  end
+
+  def current_members_table
     noko.xpath('//table[.//caption[contains(., "Народні депутати VIII скликання")]]')
   end
 
@@ -37,7 +39,7 @@ class MembersPage < Scraped::HTML
   end
 end
 
-class MemberRow < Scraped::HTML
+class CurrentMemberRow < Scraped::HTML
   field :name do
     name_link.map(&:text).map(&:tidy).first
   end
