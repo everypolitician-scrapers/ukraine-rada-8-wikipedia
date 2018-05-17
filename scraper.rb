@@ -13,7 +13,7 @@ class MembersPage < Scraped::HTML
   decorator WikidataIdsDecorator::Links
 
   field :members do
-    current_members.map do |mem|
+    (current_members + ex_members).map do |mem|
       known = parties.select { |party| party[:name].include? mem[:party] }
       mem[:party_id] = known.first[:id] if known.size == 1
       mem
@@ -30,8 +30,16 @@ class MembersPage < Scraped::HTML
     current_members_table.xpath('.//tr[td]').map { |tr| fragment(tr => CurrentMemberRow).to_h }
   end
 
+  def ex_members
+    ex_members_table.xpath('.//tr[td]').map { |tr| fragment(tr => ExMemberRow).to_h }
+  end
+
   def current_members_table
     noko.xpath('//table[.//caption[contains(., "Народні депутати VIII скликання")]]')
+  end
+
+  def ex_members_table
+    noko.xpath('//table[.//th[contains(., "Дата вибуття")]]')
   end
 
   def parties_table
@@ -54,6 +62,34 @@ class CurrentMemberRow < Scraped::HTML
 
   field :start_date do
     tds[6].text.split('.').reverse.map { |str| '%02d' % str.to_i }.join('-')
+  end
+
+  private
+
+  def tds
+    noko.css('td')
+  end
+
+  def name_link
+    tds[2].css('a')
+  end
+end
+
+class ExMemberRow < Scraped::HTML
+  field :name do
+    name_link.map(&:text).map(&:tidy).first
+  end
+
+  field :id do
+    name_link.first&.attr('wikidata')
+  end
+
+  field :party do
+    tds[1].text.tidy
+  end
+
+  field :end_date do
+    tds[5].text.split('.').reverse.map { |str| '%02d' % str.to_i }.join('-')
   end
 
   private
